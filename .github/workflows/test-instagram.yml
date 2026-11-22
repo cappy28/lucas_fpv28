@@ -1,0 +1,29 @@
+name: Test Instagram
+on: workflow_dispatch
+permissions: {}
+
+jobs:
+  compteur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Lire le compteur de lucas_fpv28
+        env:
+          IG_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          IG_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+        shell: bash
+        run: |
+          set -eu
+          [[ -n "$IG_TOKEN" && "$IG_ID" =~ ^[0-9]+$ ]] || { echo 'Vérifie les deux secrets : jeton manquant ou ID non numérique.'; exit 1; }
+          http=$(curl --silent --show-error --max-time 30 --output "$RUNNER_TEMP/ig.json" --write-out '%{http_code}' \
+            -H "Authorization: Bearer $IG_TOKEN" \
+            "https://graph.facebook.com/v25.0/$IG_ID?fields=username,followers_count")
+          file="$RUNNER_TEMP/ig.json"
+          if [[ "$http" != 200 ]]; then
+            code=$(jq -r '(.error.code | numbers) // "inconnu"' "$file" 2>/dev/null || echo inconnu)
+            echo "Échec de la lecture : HTTP $http, code Meta $code." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          jq -e '.username == "lucas_fpv28" and (.followers_count | type == "number")' "$file" >/dev/null || { echo 'Compte différent ou compteur absent.'; exit 1; }
+          count=$(jq -r '.followers_count' "$file")
+          echo "Instagram : @lucas_fpv28 — $count abonnés" | tee -a "$GITHUB_STEP_SUMMARY"
