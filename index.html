@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101718"><meta name="description" content="Retrouve les vols de Lucas FPV sur TikTok, Instagram et YouTube.">
+  <title>Lucas FPV | Tous mes réseaux</title><link rel="stylesheet" href="/style.css">
+</head>
+<body><main>
+  <header><span class="tag">◉ &nbsp; CARNET DE VOL / 28</span><h1>Lucas <em>FPV</em></h1><p>@lucas_fpv28 · Drone en immersion</p><p>Bienvenue à bord ! Choisis ton réseau pour suivre mes vols.</p></header>
+  <section class="dash" aria-label="Audience cumulée"><small id="label">ABONNEMENTS CUMULÉS</small><strong id="total">—</strong><span id="status" role="status">Compteurs en attente</span></section>
+  <nav aria-label="Mes réseaux">
+    <a href="https://www.tiktok.com/@lucas_fpv28"><b>TikTok</b><span id="tiktok">Voir le profil</span><i aria-hidden="true">↗</i></a>
+    <a href="https://www.instagram.com/lucas_fpv28/"><b>Instagram</b><span id="instagram">Voir le profil</span><i aria-hidden="true">↗</i></a>
+    <a href="https://www.youtube.com/@lucas_fpv28"><b>YouTube</b><span id="youtube">Voir la chaîne</span><i aria-hidden="true">↗</i></a>
+  </nav>
+  <footer>PROCHAINS CANAUX<br><span>Snapchat · À venir</span><span>Facebook · À venir</span></footer>
+</main>
+<script>
+const el = id => document.getElementById(id);
+const ids = ['tiktok','instagram','youtube'];
+const fmt = new Intl.NumberFormat('fr-FR');
+async function sync(){
+  try {
+    const r = await fetch('/api/stats'); if(!r.ok) throw Error();
+    const data = await r.json(); let sum=0, n=0;
+    for(const id of ids){
+      const v=data.stats[id];
+      if(Number.isSafeInteger(v) && v>=0){ sum+=v; n++; el(id).textContent=fmt.format(v)+' abonné'+(v>1?'s':''); }
+      else el(id).textContent=v==='off'?'Non connecté':'Indisponible';
+    }
+    el('total').textContent=n?fmt.format(sum):'—';
+    el('label').textContent=n>0 && n<3?'SOUS-TOTAL · '+n+'/3 RÉSEAUX':'ABONNEMENTS CUMULÉS';
+    el('status').textContent=n?'Relevé à '+new Date(data.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' · hors doublons non déduits'.replace('hors doublons non déduits','une personne peut compter plusieurs fois'):'Aucun compteur disponible';
+  } catch { el('status').textContent='Connexion au serveur indisponible · liens toujours actifs'; }
+  finally { setTimeout(sync,300000); }
+}
+sync();
+</script></body></html>
