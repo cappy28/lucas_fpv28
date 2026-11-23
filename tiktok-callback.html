@@ -1,18 +1,37 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Lucas FPV · Connexion TikTok</title><style>body{font:1.1rem/1.55 system-ui;background:#101822;color:#fafafa;margin:0}main{max-width:34rem;margin:auto;padding:2rem 1rem}input,button{display:block;font:inherit;border-radius:.5rem;padding:.65rem;margin:.6rem 0 1rem}button{cursor:pointer}input{width:90%}[hidden]{display:none!important}</style></head><body><main><h1>Connexion TikTok · Lucas FPV</h1><p id="message" role="status">Page de retour prête.</p><form id="form"><label for="key">Colle la Client key du Sandbox TikTok (pas le Client secret).</label><input id="key" required autocomplete="off" autocapitalize="none" spellcheck="false"><button>Connecter mon compte TikTok</button></form><section id="result" hidden><button id="copy">Copier le code privé</button><p>Dans GitHub, enregistre aussitôt ce code comme secret Actions nommé <strong>TIKTOK_AUTH_CODE</strong>. Ne le partage pas dans le chat. Ce code temporaire n’est pas encore un jeton d’accès.</p></section></main><script type="b5b6ee693083e7d08137e232-text/javascript">
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<title>Lucas FPV · Connexion TikTok</title>
+<style>body{font:1.1rem/1.55 system-ui;background:#101822;color:white;margin:0}main{max-width:34rem;margin:auto;padding:2rem 1rem}input,button,textarea{display:block;font:inherit;border-radius:.5rem;padding:.65rem;margin:.6rem 0 1rem}input,textarea{width:90%}[hidden]{display:none!important}</style>
+</head><body><main><h1>Connexion TikTok · Lucas FPV</h1><p id="msg" role="status">Chargement…</p><noscript>Active JavaScript dans ton navigateur pour continuer.</noscript>
+<form id="form" hidden><label for="key">Client key du Sandbox (jamais le Client secret)</label><input id="key" required autocomplete="off" autocapitalize="none" spellcheck="false"><button>Connecter mon compte TikTok</button></form>
+<section id="result" hidden><button id="copy">Copier le code privé</button><textarea id="manual" aria-label="Code temporaire à copier" readonly hidden></textarea><p>Enregistre ce code temporaire dans GitHub comme secret Actions TIKTOK_AUTH_CODE. Ne le partage pas.</p></section></main>
+<script type="87b2f646e7598efec12be22f-text/javascript">
 'use strict';
-const callback='https://cappy28.github.io/lucas_fpv28/tiktok-callback.html', slot='lucasfpv:tiktok:state';
-const form=document.querySelector('#form'), msg=document.querySelector('#message'), result=document.querySelector('#result');
+const callback='https://cappy28.github.io/lucas_fpv28/tiktok-callback.html';
+const slot='lucasfpv:tiktok:state';
+const el=id=>document.getElementById(id),msg=el('msg'),form=el('form');
 let code='';
 const p=new URLSearchParams(location.search);
+form.hidden=false;msg.textContent='Version 2 prête. Colle ta Client key pour continuer.';
 if(p.has('code')||p.has('error')){
  history.replaceState(null,'',location.pathname);
- const expected=sessionStorage.getItem(slot);sessionStorage.removeItem(slot);
- if(!expected||p.get('state')!==expected){msg.textContent='Retour non reconnu. Relance la connexion ici, dans le même onglet.';}
- else if(p.has('error')){msg.textContent='TikTok n’a pas accordé la connexion. Tu peux réessayer.';}
- else if(p.has('scopes')&&!p.get('scopes').split(/[,\s]+/).includes('user.info.stats')){msg.textContent='La lecture du compteur n’a pas été autorisée. Vérifie user.info.stats dans le Sandbox, puis réessaie.';}
- else if(p.get('code')){code=p.get('code');form.hidden=true;result.hidden=false;msg.textContent='Autorisation reçue. Copie le code avant de fermer cet onglet.';}
+ try{
+  const expected=sessionStorage.getItem(slot);sessionStorage.removeItem(slot);
+  if(!expected||expected!==p.get('state'))msg.textContent='Retour non reconnu. Recommence dans ce même onglet.';
+  else if(p.has('error'))msg.textContent='Connexion non autorisée. Tu peux réessayer.';
+  else if(p.has('scopes')&&!p.get('scopes').split(/[,\s]+/).includes('user.info.stats'))msg.textContent='La permission user.info.stats manque. Vérifie le Sandbox puis recommence.';
+  else if(p.get('code')){code=p.get('code');form.hidden=true;el('result').hidden=false;msg.textContent='Autorisation reçue.';}
+ }catch{msg.textContent='Le stockage de session est indisponible. Réessaie dans un onglet normal.';}
 }
-form.onsubmit=e=>{e.preventDefault();if(location.origin+location.pathname!==callback){msg.textContent='Ouvre cette page depuis ton site GitHub Pages pour commencer.';return;}const key=document.querySelector('#key').value.trim();if(!key)return;const state=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');sessionStorage.setItem(slot,state);const u=new URL('https://www.tiktok.com/v2/auth/authorize/');u.search=new URLSearchParams({client_key:key,response_type:'code',scope:'user.info.stats',redirect_uri:callback,state}).toString();location.assign(u);};
-document.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(code);msg.textContent='Code copié. Colle-le dans le secret GitHub TIKTOK_AUTH_CODE.';}catch{window.prompt('Copie ce code temporaire sans le partager :',code);}};
-</script><script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="b5b6ee693083e7d08137e232-|49" defer></script></body></html>
+form.addEventListener('submit',e=>{
+ e.preventDefault();const key=el('key').value.trim();if(!key){msg.textContent='Colle ta Client key.';return;}
+ if(location.origin+location.pathname!==callback){msg.textContent='Ouvre la page publiée sur ton site GitHub Pages.';return;}
+ try{
+ const state=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');sessionStorage.setItem(slot,state);
+ const u=new URL('https://www.tiktok.com/v2/auth/authorize/');u.search=new URLSearchParams({client_key:key,response_type:'code',scope:'user.info.stats',redirect_uri:callback,state}).toString();msg.textContent='Ouverture de TikTok…';location.assign(u.href);
+ }catch{msg.textContent='Impossible de démarrer la connexion. Essaie un onglet normal avec le stockage du site autorisé.';}
+});
+el('copy').onclick=async()=>{try{await navigator.clipboard.writeText(code);msg.textContent='Code copié.';}catch{const box=el('manual');box.value=code;box.hidden=false;box.select();msg.textContent='Copie le code sélectionné sans le partager.';}};
+</script><script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="87b2f646e7598efec12be22f-|49" defer></script></body></html>
