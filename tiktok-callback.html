@@ -2,67 +2,81 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>Lucas FPV · TikTok</title>
-  <style>body{background:#101822;color:white;font:18px/1.5 system-ui;margin:0}main{max-width:32rem;margin:auto;padding:2rem 1rem}input,button,textarea{box-sizing:border-box;width:100%;font:inherit;padding:.65rem;margin:.5rem 0}button{cursor:pointer}[hidden]{display:none!important}</style>
+  <title>Connexion TikTok · Lucas FPV</title>
+  <style>
+    body { margin:0; background:#101822; color:white; font:18px/1.5 system-ui; }
+    main { max-width:32rem; margin:auto; padding:2rem 1rem; }
+    input,button,textarea { display:block; box-sizing:border-box; width:100%; font:inherit; padding:.6rem; margin:.5rem 0 1rem; }
+    [hidden] { display:none !important; }
+  </style>
 </head>
 <body>
 <main>
   <h1>Connexion TikTok · Lucas FPV</h1>
-  <p>Version 4 corrigée · Lucas FPV</p>
-  <p id="message" role="status">Le script n’a pas démarré. Ne saisis pas de clé.</p>
-  <form id="login" hidden>
+  <p>Version autonome · A</p>
+  <p id="message" role="status">Le code de la page n’a pas démarré. Ne saisis rien.</p>
+  <noscript>JavaScript est désactivé dans ce navigateur.</noscript>
+  <form id="connexion" hidden>
     <label for="key">Client key du Sandbox (jamais le Client secret)</label>
-    <input id="key" required autocomplete="off" autocapitalize="none" spellcheck="false">
+    <input id="key" required autocomplete="off" spellcheck="false" autocapitalize="none">
     <button type="submit">Connecter mon compte TikTok</button>
   </form>
-  <section id="result" hidden><label for="code">Code temporaire privé : ne le partage pas.</label><textarea id="code" readonly></textarea></section>
+  <section id="resultat" hidden>
+    <label for="code">Code temporaire privé : ne le partage pas.</label>
+    <textarea id="code" readonly></textarea>
+  </section>
 </main>
-<script type="ea3d531117af3f2f8c8289aa-text/javascript">
-'use strict';
-const callback = 'https://cappy28.github.io/lucas_fpv28/tiktok-callback.html';
-const slot = 'lucasfpv:tiktok:state';
-const byId = id => document.getElementById(id);
-const form = byId('login');
-function statusText(text) { byId('message').textContent = text; }
-function showForm(text) { form.hidden = false; statusText(text); }
-try {
-  const params = new URLSearchParams(location.search);
-  if (!params.has('code') && !params.has('error')) {
-    showForm('Prêt. Colle uniquement ta Client key.');
-  } else {
-    history.replaceState(null, '', location.pathname);
-    const expected = sessionStorage.getItem(slot);
-    sessionStorage.removeItem(slot);
-    if (!expected || expected !== params.get('state')) {
-      showForm('Retour non reconnu. Recommence dans cet onglet.');
-    } else if (params.has('error') || !params.get('code')) {
-      showForm('Autorisation non obtenue. Tu peux réessayer.');
-    } else if (params.has('scopes') && !params.get('scopes').split(/[,\s]+/).includes('user.info.stats')) {
-      showForm('Autorisation de lire le compteur manquante.');
-    } else {
-      byId('code').value = params.get('code');
-      byId('result').hidden = false;
-      statusText('Autorisation reçue. Garde ce code privé.');
-    }
-  }
-} catch { statusText('Impossible de vérifier le retour. Rouvre la page sans paramètres dans un onglet normal.'); }
-form.addEventListener('submit', event => {
-  event.preventDefault();
+<script data-cfasync="false">
+(function () {
+  'use strict';
+  var msg = document.getElementById('message');
+  var form = document.getElementById('connexion');
+  var callback = 'https://cappy28.github.io/lucas_fpv28/tiktok-callback.html';
+  var slot = 'lucasfpv:tiktok:state';
+  function ready(text) { msg.textContent = text; form.hidden = false; }
   try {
-    if (location.origin + location.pathname !== callback) { statusText('Ouvre la page publiée sur GitHub Pages.'); return; }
-    const key = byId('key').value.trim();
-    if (!key) { statusText('La Client key est vide.'); return; }
-    const bytes = crypto.getRandomValues(new Uint8Array(24));
-    const state = Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('');
-    sessionStorage.setItem(slot, state);
-    const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
-    url.search = new URLSearchParams({client_key:key,response_type:'code',scope:'user.info.stats',state,redirect_uri:callback}).toString();
-    statusText('Ouverture de TikTok…');
-    location.assign(url.href);
-  } catch { statusText('Connexion impossible. Vérifie que le navigateur autorise le stockage de session.'); }
-});
+    var params = new URLSearchParams(location.search);
+    if (params.has('code') || params.has('error')) {
+      history.replaceState(null, '', location.pathname);
+      var expected = sessionStorage.getItem(slot);
+      sessionStorage.removeItem(slot);
+      if (!expected || params.get('state') !== expected) {
+        ready('Retour non reconnu. Recommence depuis cet onglet.');
+      } else if (params.has('error') || !params.get('code')) {
+        ready('Autorisation non obtenue. Tu peux réessayer.');
+      } else if (params.has('scopes') && !params.get('scopes').split(/[,\s]+/).includes('user.info.stats')) {
+        ready('La lecture du compteur n’a pas été autorisée.');
+      } else {
+        document.getElementById('code').value = params.get('code');
+        document.getElementById('resultat').hidden = false;
+        msg.textContent = 'Autorisation reçue. Garde ce code privé.';
+      }
+    } else {
+      ready('Prêt. Colle uniquement ta Client key.');
+    }
+  } catch (e) { msg.textContent = 'Impossible de vérifier le retour. Rouvre la page sans paramètres dans un onglet normal.'; }
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    try {
+      if (location.origin + location.pathname !== callback) { msg.textContent = 'Ouvre la page sur ton site GitHub Pages.'; return; }
+      var key = document.getElementById('key').value.trim();
+      if (!key) { msg.textContent = 'La Client key est vide.'; return; }
+      var bytes = crypto.getRandomValues(new Uint8Array(24));
+      var state = Array.from(bytes, function(n) { return ('0' + n.toString(16)).slice(-2); }).join('');
+      sessionStorage.setItem(slot, state);
+      var url = new URL('https://www.tiktok.com/v2/auth/authorize/');
+      url.searchParams.set('client_key', key);
+      url.searchParams.set('response_type', 'code');
+      url.searchParams.set('scope', 'user.info.stats');
+      url.searchParams.set('state', state);
+      url.searchParams.set('redirect_uri', callback);
+      msg.textContent = 'Ouverture de TikTok…';
+      location.assign(url.href);
+    } catch (e) { msg.textContent = 'Connexion non démarrée. Vérifie que le stockage de session est autorisé.'; }
+  });
+})();
 </script>
-<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="ea3d531117af3f2f8c8289aa-|49" defer></script></body>
+</body>
 </html>
