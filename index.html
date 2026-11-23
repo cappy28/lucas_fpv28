@@ -1,50 +1,37 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101718">
-<meta name="description" content="Les vols de drone de Lucas FPV sur TikTok, Instagram et YouTube.">
-<title>Lucas FPV | Tous mes réseaux</title>
-<link rel="stylesheet" href="./style.css">
-</head>
-<body><main>
-<header><span class="tag">◉ &nbsp; CARNET DE VOL / 28</span><h1>Lucas <em>FPV</em></h1><p>@lucas_fpv28 · Drone en immersion</p><p>Bienvenue à bord ! Choisis ton réseau pour suivre mes vols.</p></header>
-<section class="dash" aria-label="Audience cumulée"><small id="label">ABONNEMENTS CUMULÉS</small><strong id="total">—</strong><span id="status" role="status">Chargement du dernier relevé…</span><noscript>Active JavaScript pour afficher les compteurs.</noscript></section>
-<nav aria-label="Mes réseaux">
-<a href="https://www.tiktok.com/@lucas_fpv28"><b>TikTok</b><span id="tiktok">Voir le profil</span><i aria-hidden="true">↗</i></a>
-<a href="https://www.instagram.com/lucas_fpv28/"><b>Instagram</b><span id="instagram">Voir le profil</span><i aria-hidden="true">↗</i></a>
-<a href="https://www.youtube.com/@lucas_fpv28"><b>YouTube</b><span id="youtube">Voir la chaîne</span><i aria-hidden="true">↗</i></a>
-</nav><footer>PROCHAINS CANAUX<br><span>Snapchat · À venir</span><span>Facebook · À venir</span></footer>
-</main>
-<script type="3b32b5c28292637f0a3f4d1b-text/javascript">
-const byId = id => document.getElementById(id);
-const networks = ['tiktok','instagram','youtube'];
-const format = new Intl.NumberFormat('fr-FR');
-let lastReport = '';
-async function refresh() {
-  try {
-    const res = await fetch('./stats.json', {cache: 'no-store'});
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    if (!data.stats || typeof data.stats !== 'object') throw new Error();
-    let total = 0, available = 0;
-    for (const network of networks) {
-      const count = data.stats[network];
-      if (Number.isSafeInteger(count) && count >= 0) {
-        byId(network).textContent = format.format(count) + (count > 1 ? ' abonnés' : ' abonné');
-        total += count; available++;
-      } else byId(network).textContent = 'Indisponible';
-    }
-    byId('total').textContent = available ? format.format(total) : '—';
-    byId('label').textContent = available > 0 && available < 3 ? `SOUS-TOTAL · ${available}/3 RÉSEAUX` : 'ABONNEMENTS CUMULÉS';
-    const date = new Date(data.at);
-    lastReport = available ? (Number.isFinite(data.at) && !Number.isNaN(date.getTime()) ? 'Dernier relevé : ' + date.toLocaleString('fr-FR', {dateStyle:'short',timeStyle:'short'}) : 'Dernier relevé disponible') : 'Aucun compteur disponible';
-    byId('status').textContent = lastReport;
-  } catch {
-    byId('status').textContent = lastReport ? lastReport + ' · Actualisation indisponible' : 'Compteurs indisponibles · les liens restent actifs';
-  } finally { setTimeout(refresh, 300000); }
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lucas FPV · Carnet de vol</title>
+<style>
+:root{color-scheme:dark;--lime:#d2ff63;--muted:#bccbc4}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top right,#233f35,transparent 60%),#101719;color:#f5f7f5;font:1rem/1.5 system-ui,sans-serif}main{width:min(100% - 2rem,38rem);margin:auto;padding:clamp(2rem,7vh,5rem) 0}h1{font-size:clamp(3rem,10vw,5rem);letter-spacing:-.07em;line-height:1;margin:1.4rem 0}em,.tag,strong{color:var(--lime)}.tag,h2{font:700 .85rem/1.5 monospace;letter-spacing:.1em}p,footer,small{color:var(--muted)}section,nav a{background:#18231f;border:1px solid #45554e;border-radius:1rem}section{padding:1.1rem;margin:1.4rem 0 1rem}h2{margin:0}strong{font-size:2.5rem}#status{margin:.25rem 0}nav{display:grid;gap:.55rem}nav a{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:1rem;color:inherit;text-decoration:none}nav a:hover,nav a:focus-visible{border-color:var(--lime)}footer{margin-top:2rem;font-size:.85rem}a{color:var(--lime)}
+</style></head>
+<body><main><header><b class="tag">● &nbsp; CARNET DE VOL / 28</b><h1>Lucas <em>FPV</em></h1><p>@lucas_fpv28 · Drone en immersion<br>Bienvenue à bord ! Choisis ton réseau pour suivre mes vols.</p></header>
+<section aria-labelledby="titre"><h2 id="titre">ABONNEMENTS CUMULÉS</h2><strong id="total">—</strong><p id="status" role="status">Les compteurs ne sont pas encore affichés.</p><small><a href="./stats.json">Voir le dernier relevé brut</a></small></section>
+<nav aria-label="Mes réseaux"><a href="https://www.tiktok.com/@lucas_fpv28"><b>TikTok</b><span id="tiktok">Voir le profil ↗</span></a><a href="https://www.instagram.com/lucas_fpv28/"><b>Instagram</b><span id="instagram">Voir le profil ↗</span></a><a href="https://www.youtube.com/@lucas_fpv28"><b>YouTube</b><span id="youtube">Voir la chaîne ↗</span></a></nav>
+<footer>PROCHAINS CANAUX<br>Snapchat · À venir &nbsp; | &nbsp; Facebook · À venir<p><a href="./conditions.html">Conditions d’utilisation</a> · <a href="./confidentialite.html">Confidentialité</a></p></footer></main>
+<script type="aec4f787183e2c1699cc9bf2-text/javascript">
+'use strict';
+const el=id=>document.getElementById(id);
+const plateformes=['tiktok','instagram','youtube'];
+const nombre=new Intl.NumberFormat('fr-FR');
+let dernier='';
+async function actualiser(){
+ const controle=new AbortController();
+ const limite=setTimeout(()=>controle.abort(),10000);
+ try{
+  const r=await fetch('./stats.json',{cache:'no-store',signal:controle.signal});
+  if(!r.ok)throw new Error('Relevé indisponible');
+  const d=await r.json();
+  if(!d.stats || !plateformes.every(p=>Number.isSafeInteger(d.stats[p]) && d.stats[p]>=0))throw new Error('Format inattendu');
+  const date=new Date(d.at);
+  if(!Number.isFinite(d.at)||!Number.isFinite(date.getTime()))throw new Error('Date invalide');
+  dernier='Dernier relevé : '+date.toLocaleString('fr-FR');
+  for(const p of plateformes)el(p).textContent=nombre.format(d.stats[p])+' abonné'+(d.stats[p]>1?'s':'')+' ↗';
+  el('total').textContent=nombre.format(plateformes.reduce((s,p)=>s+d.stats[p],0));
+  el('status').textContent=dernier;
+ }catch(e){el('status').textContent=dernier?dernier+' · Actualisation indisponible.':'Compteurs indisponibles. Consulte le relevé brut ci-dessous.';}
+ finally{clearTimeout(limite);}
 }
-refresh();
-</script>
-<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="3b32b5c28292637f0a3f4d1b-|49" defer></script></body></html>
+actualiser();setInterval(actualiser,300000);
+</script><script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="aec4f787183e2c1699cc9bf2-|49" defer></script></body></html>
