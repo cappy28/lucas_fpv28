@@ -1,0 +1,94 @@
+# Lucas FPV — initialisation TikTok (une seule fois, depuis ton téléphone)
+# 1. Crée ce fichier sur la branche par défaut : .github/workflows/initialiser-tiktok.yml
+# 2. Dans les paramètres de TON COMPTE GitHub : Developer settings > Personal access tokens
+#    > Fine-grained tokens > Generate new token. Choisis une expiration courte (ex. 7 jours),
+#    Only select repositories > lucas_fpv28, Repository permissions > Secrets: Read and write.
+#    Ne donne aucun autre droit facultatif. Ce jeton peut modifier les secrets de ce dépôt.
+# 3. Dépôt > Settings > Secrets and variables > Actions : ajoute le jeton GitHub comme
+#    repository secret nommé REPO_SECRETS_WRITER. Ne mets aucune valeur privée dans ce fichier.
+# 4. AVANT de te reconnecter : Actions > Initialiser TikTok > Run workflow > verifier.
+# 5. Si la vérification réussit, reconnecte ton compte sur ta page tiktok-callback.html.
+#    Modifie le secret existant TIKTOK_AUTH_CODE avec le NOUVEAU code. Ne lance PAS « Test TikTok ».
+# 6. Lance « Initialiser TikTok » en choisissant cette fois « enregistrer ».
+#    Succès : vérifie la présence de TIKTOK_REFRESH_TOKEN dans la liste des secrets.
+#    Tu peux alors supprimer TIKTOK_AUTH_CODE et révoquer le jeton GitHub temporaire.
+#    Ce fichier initialise le jeton ; il ne planifie pas encore les mises à jour du site.
+name: Initialiser TikTok
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Vérifier la configuration ou échanger le nouveau code TikTok
+        type: choice
+        required: true
+        default: verifier
+        options:
+          - verifier
+          - enregistrer
+permissions: {}
+concurrency:
+  group: initialiser-tiktok
+  cancel-in-progress: false
+jobs:
+  initialiser:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Vérifier les droits GitHub sans utiliser le code TikTok
+        env:
+          GH_TOKEN: ${{ secrets.REPO_SECRETS_WRITER }}
+          KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+        run: |
+          set -eu
+          if [ -z "$GH_TOKEN" ] || [ -z "$KEY" ] || [ -z "$SECRET" ]; then
+            echo 'Il manque REPO_SECRETS_WRITER, TIKTOK_CLIENT_KEY ou TIKTOK_CLIENT_SECRET.'; exit 1
+          fi
+          # Crée un secret de test sans valeur sensible pour vérifier le droit d’écriture réel.
+          # Son nom est propre à cette exécution ; on le supprime immédiatement.
+          probe="LUCAS_FPV_PROBE_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          printf 'test' | gh secret set "$probe" --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh secret delete "$probe" --repo "$GITHUB_REPOSITORY"
+          echo 'Vérification réussie : GitHub peut enregistrer le jeton. Aucun code TikTok utilisé.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Échanger le code puis conserver le jeton de renouvellement
+        if: inputs.mode == 'enregistrer'
+        env:
+          GH_TOKEN: ${{ secrets.REPO_SECRETS_WRITER }}
+          KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          CODE: ${{ secrets.TIKTOK_AUTH_CODE }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError, URLError
+          env = os.environ
+          if not env['CODE'].strip():
+              sys.exit('Ajoute un nouveau code dans TIKTOK_AUTH_CODE.')
+          form = urlencode(dict(client_key=env['KEY'].strip(), client_secret=env['SECRET'].strip(),
+              code=env['CODE'].strip(), grant_type='authorization_code',
+              redirect_uri='https://cappy28.github.io/lucas_fpv28/tiktok-callback.html')).encode()
+          req = Request('https://open.tiktokapis.com/v2/oauth/token/', data=form,
+                        headers={'Content-Type':'application/x-www-form-urlencoded'})
+          try:
+              with urlopen(req, timeout=20) as res:
+                  data = json.load(res)
+          except HTTPError as e:
+              sys.exit(f'TikTok a refusé la demande (HTTP {e.code}). Vérifie le nouveau code, la Redirect URI et les clés du Sandbox. Ne publie pas la réponse brute.')
+          except (URLError, TimeoutError, ValueError):
+              sys.exit('Réponse TikTok indisponible ou illisible. Aucun jeton enregistré.')
+          refresh = data.get('refresh_token') if isinstance(data, dict) else None
+          if not isinstance(refresh, str) or not refresh:
+              sys.exit('TikTok n’a pas renvoyé de jeton de renouvellement.')
+          cmd = ['gh','secret','set','TIKTOK_REFRESH_TOKEN','--repo',env['GITHUB_REPOSITORY']]
+          for _ in range(3):
+              if subprocess.run(cmd, input=refresh, text=True, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL).returncode == 0:
+                  break
+          else:
+              sys.exit('Échange réalisé mais sauvegarde impossible. Vérifie le droit Secrets du jeton GitHub avant de demander un autre code.')
+          with open(env['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('\nTIKTOK_REFRESH_TOKEN enregistré. Aucun jeton affiché.\n')
+          PY
