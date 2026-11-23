@@ -1,37 +1,32 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#101819">
 <title>Lucas FPV · Carnet de vol</title>
 <style>
-:root{color-scheme:dark;--lime:#d2ff63;--muted:#bccbc4}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top right,#233f35,transparent 60%),#101719;color:#f5f7f5;font:1rem/1.5 system-ui,sans-serif}main{width:min(100% - 2rem,38rem);margin:auto;padding:clamp(2rem,7vh,5rem) 0}h1{font-size:clamp(3rem,10vw,5rem);letter-spacing:-.07em;line-height:1;margin:1.4rem 0}em,.tag,strong{color:var(--lime)}.tag,h2{font:700 .85rem/1.5 monospace;letter-spacing:.1em}p,footer,small{color:var(--muted)}section,nav a{background:#18231f;border:1px solid #45554e;border-radius:1rem}section{padding:1.1rem;margin:1.4rem 0 1rem}h2{margin:0}strong{font-size:2.5rem}#status{margin:.25rem 0}nav{display:grid;gap:.55rem}nav a{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:1rem;color:inherit;text-decoration:none}nav a:hover,nav a:focus-visible{border-color:var(--lime)}footer{margin-top:2rem;font-size:.85rem}a{color:var(--lime)}
-</style></head>
-<body><main><header><b class="tag">● &nbsp; CARNET DE VOL / 28</b><h1>Lucas <em>FPV</em></h1><p>@lucas_fpv28 · Drone en immersion<br>Bienvenue à bord ! Choisis ton réseau pour suivre mes vols.</p></header>
-<section aria-labelledby="titre"><h2 id="titre">ABONNEMENTS CUMULÉS</h2><strong id="total">—</strong><p id="status" role="status">Les compteurs ne sont pas encore affichés.</p><small><a href="./stats.json">Voir le dernier relevé brut</a></small></section>
-<nav aria-label="Mes réseaux"><a href="https://www.tiktok.com/@lucas_fpv28"><b>TikTok</b><span id="tiktok">Voir le profil ↗</span></a><a href="https://www.instagram.com/lucas_fpv28/"><b>Instagram</b><span id="instagram">Voir le profil ↗</span></a><a href="https://www.youtube.com/@lucas_fpv28"><b>YouTube</b><span id="youtube">Voir la chaîne ↗</span></a></nav>
-<footer>PROCHAINS CANAUX<br>Snapchat · À venir &nbsp; | &nbsp; Facebook · À venir<p><a href="./conditions.html">Conditions d’utilisation</a> · <a href="./confidentialite.html">Confidentialité</a></p></footer></main>
-<script type="aec4f787183e2c1699cc9bf2-text/javascript">
+*{box-sizing:border-box}body{margin:0;min-height:100vh;color:#f3f5f4;background:radial-gradient(ellipse at top right,#254338,#101819 60%);font:16px/1.5 system-ui,sans-serif}main{max-width:640px;margin:auto;padding:48px 22px}small{font:700 .85rem monospace;letter-spacing:.09em}header small,em,strong,a{color:#d3ff60}h1{font-size:clamp(3rem,10vw,5rem);letter-spacing:-.07em;line-height:1;margin:24px 0}header p,footer,#status{color:#bfcdc7}.panel,nav a{display:block;border:1px solid #475851;border-radius:16px;background:#18241f;padding:16px;margin:12px 0}strong{display:block;font-size:2.5rem}nav a{display:flex;align-items:center;justify-content:space-between;color:inherit;text-decoration:none}nav a:hover,nav a:focus-visible{border-color:#d3ff60}footer{margin-top:32px}#status,footer{font-size:.9rem}
+</style>
+</head>
+<body><main><header><small>●　 CARNET DE VOL / 28</small><h1>Lucas <em>FPV</em></h1><p>@lucas_fpv28 · Drone en immersion<br>Bienvenue à bord ! Choisis ton réseau pour suivre mes vols.</p></header>
+<section class="panel" aria-label="Audience cumulée"><small>ABONNEMENTS CUMULÉS</small><strong id="total">1 072</strong><p id="status" role="status">Relevé de sauvegarde · actualisation non confirmée.</p><a href="./stats.json">Voir le dernier relevé brut</a></section>
+<nav aria-label="Mes réseaux"><a href="https://www.tiktok.com/@lucas_fpv28"><b>TikTok</b><span><span id="tiktok">6 abonnés</span> ↗</span></a><a href="https://www.instagram.com/lucas_fpv28/"><b>Instagram</b><span><span id="instagram">1 019 abonnés</span> ↗</span></a><a href="https://www.youtube.com/@lucas_fpv28"><b>YouTube</b><span><span id="youtube">47 abonnés</span> ↗</span></a></nav>
+<footer>PROCHAINS CANAUX<br>Snapchat · À venir　|　Facebook · À venir<p><a href="./conditions.html">Conditions d’utilisation</a> · <a href="./confidentialite.html">Confidentialité</a></p></footer></main>
+<script data-cfasync="false">
+(function(){
 'use strict';
-const el=id=>document.getElementById(id);
-const plateformes=['tiktok','instagram','youtube'];
-const nombre=new Intl.NumberFormat('fr-FR');
-let dernier='';
-async function actualiser(){
- const controle=new AbortController();
- const limite=setTimeout(()=>controle.abort(),10000);
+var last='',busy=false, names=['tiktok','instagram','youtube'];
+function el(id){return document.getElementById(id);}
+async function refresh(){
+ if(busy)return;busy=true;
  try{
-  const r=await fetch('./stats.json',{cache:'no-store',signal:controle.signal});
-  if(!r.ok)throw new Error('Relevé indisponible');
-  const d=await r.json();
-  if(!d.stats || !plateformes.every(p=>Number.isSafeInteger(d.stats[p]) && d.stats[p]>=0))throw new Error('Format inattendu');
-  const date=new Date(d.at);
-  if(!Number.isFinite(d.at)||!Number.isFinite(date.getTime()))throw new Error('Date invalide');
-  dernier='Dernier relevé : '+date.toLocaleString('fr-FR');
-  for(const p of plateformes)el(p).textContent=nombre.format(d.stats[p])+' abonné'+(d.stats[p]>1?'s':'')+' ↗';
-  el('total').textContent=nombre.format(plateformes.reduce((s,p)=>s+d.stats[p],0));
-  el('status').textContent=dernier;
- }catch(e){el('status').textContent=dernier?dernier+' · Actualisation indisponible.':'Compteurs indisponibles. Consulte le relevé brut ci-dessous.';}
- finally{clearTimeout(limite);}
+  var r=await fetch('./stats.json',{cache:'no-store'});if(!r.ok)throw Error();
+  var d=await r.json(),sum=0;
+  names.forEach(function(k){var n=d.stats[k];if(!Number.isSafeInteger(n)||n<0)throw Error();sum+=n;});
+  var date=new Date(d.at);if(!Number.isFinite(d.at)||!Number.isFinite(date.getTime()))throw Error();
+  names.forEach(function(k){var n=d.stats[k];el(k).textContent=n.toLocaleString('fr-FR')+(n>1?' abonnés':' abonné');});
+  el('total').textContent=sum.toLocaleString('fr-FR');last='Dernier relevé : '+date.toLocaleString('fr-FR');el('status').textContent=last;
+ }catch(e){el('status').textContent=(last||'Relevé de sauvegarde')+' · actualisation indisponible.';}finally{busy=false;}
 }
-actualiser();setInterval(actualiser,300000);
-</script><script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="aec4f787183e2c1699cc9bf2-|49" defer></script></body></html>
+refresh();setInterval(refresh,300000);
+})();
+</script></body></html>
