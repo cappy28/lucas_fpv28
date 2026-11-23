@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<title>Lucas FPV · Connexion TikTok</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101620;color:#f6f8fa;font:1rem/1.55 system-ui,sans-serif}main{max-width:32rem;margin:8vh auto;padding:1.5rem}input,button,textarea{display:block;width:100%;padding:.8rem;margin:.6rem 0 1rem;border-radius:.5rem;font:inherit}button{background:#9be7ed;color:#10202a;font-weight:bold;border:0;cursor:pointer}label{font-weight:600}small{color:#bdcbd4}[hidden]{display:none!important}
+</style>
+</head>
+<body><main>
+<small>LUCAS FPV · CONFIGURATION DU COMPTE</small>
+<h1>Connexion à TikTok</h1>
+<p id="status" role="status">Page de retour prête.</p>
+<form id="start" hidden>
+<label for="key">Client key du Sandbox</label>
+<input id="key" required autocomplete="off" autocapitalize="none" spellcheck="false">
+<p>Utilise la ligne « Client key », jamais « Client secret ». Ouvre la connexion dans ce même onglet et choisis @lucas_fpv28.</p>
+<button>Continuer sur TikTok</button></form>
+<section id="result" hidden>
+<p>Ce code temporaire n’est pas encore un jeton. Ne l’envoie pas dans le chat et ne le mets pas dans un fichier GitHub. Il servira à un échange privé côté serveur.</p>
+<button type="button" id="copy">Copier le code temporaire</button>
+<textarea id="manual" hidden readonly aria-label="Code temporaire à copier en privé"></textarea>
+</section>
+<noscript>Active JavaScript pour utiliser cette page.</noscript>
+</main><script type="368c8c53d5c3389d8bf86e15-text/javascript">
+'use strict';
+const callback='https://cappy28.github.io/lucas_fpv28/tiktok-callback.html';
+const slot='lucas-fpv:tiktok:state';
+const el=id=>document.getElementById(id);
+const query=new URLSearchParams(location.search);
+const returning=['code','error','state'].some(k=>query.has(k));
+if(location.search||location.hash)history.replaceState(null,'',location.pathname);
+const say=text=>{el('status').textContent=text};
+if(location.origin+location.pathname!==callback){say('Ouvre cette page à son adresse publiée sur le site Lucas FPV.');}
+else if(!returning){el('start').hidden=false;}
+else{
+ let expected=null;
+ try{expected=sessionStorage.getItem(slot);sessionStorage.removeItem(slot);}catch{}
+ if(!expected||expected!==query.get('state'))say('Session non reconnue. Rouvre cette page sans paramètres et recommence dans le même onglet.');
+ else if(query.has('error'))say('Autorisation interrompue : '+(query.get('error_description')||query.get('error')));
+ else if(!query.get('code'))say('Aucun code reçu. Rouvre cette page pour recommencer.');
+ else{
+ const code=query.get('code');say('Code d’autorisation reçu.');el('result').hidden=false;
+ el('copy').onclick=async()=>{try{await navigator.clipboard.writeText(code);say('Code copié. Garde-le privé.');}catch{el('manual').hidden=false;el('manual').value=code;el('manual').select();say('Copie le texte sélectionné et garde-le privé.');}};
+ }
+}
+el('start').onsubmit=e=>{e.preventDefault();const key=el('key').value.trim();if(!key)return;
+ const state=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
+ try{sessionStorage.setItem(slot,state);}catch{say('Le stockage de session est bloqué. Réessaie dans un onglet normal.');return;}
+ const target=new URL('https://www.tiktok.com/v2/auth/authorize/');target.search=new URLSearchParams({client_key:key,response_type:'code',scope:'user.info.stats',redirect_uri:callback,state}).toString();location.assign(target.href);
+};
+</script><script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="368c8c53d5c3389d8bf86e15-|49" defer></script></body></html>
