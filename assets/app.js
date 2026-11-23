@@ -1,41 +1,38 @@
-```js
 'use strict';
-// Même script depuis /accueil/ et /stats/. Aucune clé dans le navigateur.
 (() => {
-  const note = document.querySelector('[data-status]');
-  if (!note) return;
-  const source = document.querySelector('[data-source]').href;
-  const button = document.querySelector('[data-reload]');
-  const keys = ['youtube', 'instagram', 'tiktok'];
+  const get = s => document.querySelector(s);
+  const status = get('[data-status]'), source = get('[data-source]');
+  if (!status || !source) return;
   const fmt = new Intl.NumberFormat('fr-FR');
-  let busy = false, previous = '';
-  async function read() {
-    if (busy) return;
-    busy = true;
+  const networks = ['youtube','instagram','tiktok'];
+  const button = get('[data-reload]');
+  let active = false, last = '';
+  async function refresh() {
+    if (active) return;
+    active = true;
     if (button) button.disabled = true;
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(),10000);
     try {
-      const res = await fetch(source, {cache:'no-store',signal:ctrl.signal});
-      if (!res.ok) throw Error();
-      const d = await res.json();
-      const valid = keys.filter(k => Number.isSafeInteger(d.stats?.[k]) && d.stats[k] >= 0);
-      if (!valid.length) throw Error();
+      const response = await fetch(source.href,{cache:'no-store',signal:controller.signal});
+      if (!response.ok) throw new Error('HTTP');
+      const record = await response.json();
+      const counts = record.stats || {};
+      const known = networks.filter(k => Number.isSafeInteger(counts[k]) && counts[k] >= 0);
+      if (!known.length) throw new Error('Relevé vide');
       document.querySelectorAll('[data-network]').forEach(el => {
         const k = el.dataset.network;
-        el.textContent = valid.includes(k) ? fmt.format(d.stats[k]) + (d.stats[k] > 1 ? ' abonnés' : ' abonné') : 'Indisponible';
+        el.textContent = known.includes(k) ? `${fmt.format(counts[k])} abonné${counts[k]>1?'s':''}` : 'Indisponible';
       });
-      document.querySelector('[data-total]').textContent = fmt.format(valid.reduce((n,k) => n+d.stats[k],0));
-      document.querySelector('[data-label]').textContent = valid.length === 3 ? 'Abonnements cumulés' : `Sous-total · ${valid.length}/3 réseaux`;
-      const date = new Date(d.at);
-      previous = Number.isFinite(d.at) && !Number.isNaN(date.valueOf()) ? 'Dernier relevé : ' + date.toLocaleString('fr-FR',{dateStyle:'medium',timeStyle:'short'}) : 'Date du relevé indisponible';
-      note.textContent = previous;
-    } catch {
-      note.textContent = previous ? previous + ' · actualisation indisponible' : 'Relevé indisponible. Les liens vers les réseaux restent accessibles.';
-    } finally { clearTimeout(timer); busy=false; if(button) button.disabled=false; }
+      get('[data-label]').textContent = known.length === 3 ? 'Abonnements cumulés' : `Sous-total · ${known.length}/3 réseaux`;
+      get('[data-total]').textContent = fmt.format(known.reduce((sum,k) => sum + counts[k],0));
+      const date = new Date(record.at);
+      last = Number.isFinite(record.at) && Number.isFinite(date.getTime()) ? `Dernier relevé : ${date.toLocaleString('fr-FR',{dateStyle:'medium',timeStyle:'short'})}` : 'Date du relevé inconnue';
+      status.textContent = last;
+    } catch { status.textContent = last ? `${last} · actualisation indisponible` : 'Compteurs indisponibles. Tu peux ouvrir le relevé brut.'; }
+    finally {clearTimeout(timeout);active=false;if(button) button.disabled=false;}
   }
-  if(button){button.hidden=false; button.addEventListener('click',read);}
-  read();
-  setInterval(() => {if (!document.hidden) read();},300000);
+  if(button){button.hidden=false;button.addEventListener('click',refresh);}
+  refresh();
+  setInterval(() => {if(!document.hidden) refresh();},300000);
 })();
-```
