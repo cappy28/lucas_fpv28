@@ -1,0 +1,42 @@
+name: Test YouTube
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  compteur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Lire le compteur public de @lucas_fpv28
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        shell: python
+        run: |
+          import json, os
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError, URLError
+          from urllib.parse import urlencode
+
+          key = os.environ.get('YOUTUBE_API_KEY', '').strip()
+          if not key:
+              raise SystemExit('Secret YOUTUBE_API_KEY absent ou vide.')
+          query = urlencode({'part': 'statistics', 'forHandle': '@lucas_fpv28'})
+          req = Request('https://www.googleapis.com/youtube/v3/channels?' + query,
+                        headers={'X-Goog-Api-Key': key})
+          try:
+              with urlopen(req, timeout=20) as response:
+                  items = json.load(response).get('items', [])
+          except HTTPError as err:
+              raise SystemExit(f'Google a répondu HTTP {err.code}. Vérifie que YouTube Data API v3 est activée, que la clé est autorisée et que le quota est disponible.')
+          except (URLError, TimeoutError):
+              raise SystemExit('Connexion à Google impossible. Réessaie plus tard.')
+          if not items:
+              raise SystemExit('Aucune chaîne trouvée pour @lucas_fpv28. Vérifie le handle sur YouTube.')
+          stats = items[0].get('statistics', {})
+          count = stats.get('subscriberCount')
+          if stats.get('hiddenSubscriberCount') or count is None:
+              raise SystemExit('Chaîne trouvée, mais le nombre d’abonnés n’est pas public.')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+              print(f'**YouTube · @lucas_fpv28 : {int(count)} abonnés**', file=summary)
