@@ -1,0 +1,52 @@
+# Fichier complet : .github/workflows/test-tiktok.yml
+# Test manuel uniquement. N'écrit rien sur le site, ne conserve pas les jetons.
+# Pour connecter ensuite le compteur en continu, il faudra une nouvelle autorisation.
+name: Test TikTok
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  compteur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Lire le nombre d’abonnés TikTok
+        shell: python
+        env:
+          KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          CODE: ${{ secrets.TIKTOK_AUTH_CODE }}
+        run: |
+          import json, os, sys
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError
+
+          def lire(req):
+              try:
+                  with urlopen(req, timeout=20) as r:
+                      return json.load(r)
+              except HTTPError as e:
+                  try:
+                      err = json.load(e).get('error')
+                  except ValueError:
+                      err = None
+                  if err == 'invalid_grant':
+                      sys.exit('Code refusé : vérifie l’adresse de retour, refais la connexion TikTok, remplace TIKTOK_AUTH_CODE et relance.')
+                  if err == 'invalid_client':
+                      sys.exit('Identifiants refusés : vérifie que les deux clés viennent du même Sandbox.')
+                  sys.exit(f'Requête refusée (HTTP {e.code}). Vérifie les secrets et la permission user.info.stats.')
+
+          if not all(os.environ.get(k, '').strip() for k in ('KEY','SECRET','CODE')):
+              sys.exit('Un des trois secrets TikTok manque dans GitHub.')
+          form = urlencode(dict(client_key=os.environ['KEY'].strip(), client_secret=os.environ['SECRET'].strip(), code=os.environ['CODE'].strip(), grant_type='authorization_code', redirect_uri='https://cappy28.github.io/lucas_fpv28/tiktok-callback.html')).encode()
+          tokens = lire(Request('https://open.tiktokapis.com/v2/oauth/token/', data=form, headers={'Content-Type':'application/x-www-form-urlencoded'}))
+          token = tokens.get('access_token')
+          if not token:
+              sys.exit('TikTok n’a pas délivré de jeton.')
+          result = lire(Request('https://open.tiktokapis.com/v2/user/info/?fields=follower_count', headers={'Authorization':'Bearer ' + token}))
+          n = result.get('data', {}).get('user', {}).get('follower_count')
+          if type(n) is not int or n < 0:
+              sys.exit('Aucun compteur reçu. Vérifie que user.info.stats a été autorisé pendant la connexion TikTok.')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as f:
+              print(f'**Compte TikTok connecté : {n} abonnés.**', file=f)
